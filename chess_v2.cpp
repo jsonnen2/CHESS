@@ -63,13 +63,14 @@ class Bitboard {
 public: 
     uint64_t white_pieces;
     uint64_t black_pieces;
-// Order of implementation
-    uint64_t rook;
+    
+    uint64_t pawn;
+    uint64_t knight;
     uint64_t bishop;
+    uint64_t rook;
     uint64_t queen;
     uint64_t king;
-    uint64_t knight;
-    uint64_t pawn;
+    
 // another initialization method using fen string
 // I think I can only have 1 initialization tho
     Bitboard(char* charBoard) {
@@ -78,34 +79,43 @@ public:
             this-> white_pieces <<= 1;
             this-> black_pieces <<= 1;
 
-            this-> rook <<= 1;
+            this-> pawn <<= 1;
+            this-> knight <<= 1;
             this-> bishop <<= 1;
+            this-> rook <<= 1;
             this-> queen <<= 1;
             this-> king <<= 1;
-            this-> knight <<= 1;
-            this-> pawn <<= 1;
+
             if (charBoard[i] != '.') {
                 if (isupper(charBoard[i])) 
                     this-> white_pieces += 1;
                 else 
                     this-> black_pieces += 1;
 
-                if (charBoard[i] == 'r' || charBoard[i] == 'R') 
-                    this-> rook += 1;
+                if (charBoard[i] == 'p' || charBoard[i] == 'P') 
+                    this-> pawn += 1;
+                else if (charBoard[i] == 'n' || charBoard[i] == 'N') 
+                    this-> knight += 1;
                 else if (charBoard[i] == 'b' || charBoard[i] == 'B') 
                     this-> bishop += 1;
+                else if (charBoard[i] == 'r' || charBoard[i] == 'R') 
+                    this-> rook += 1;
                 else if (charBoard[i] == 'q' || charBoard[i] == 'Q') 
                     this-> queen += 1;
                 else if (charBoard[i] == 'k' || charBoard[i] == 'K') 
                     this-> king += 1;
-                else if (charBoard[i] == 'n' || charBoard[i] == 'N') 
-                    this-> knight += 1;
-                else if (charBoard[i] == 'p' || charBoard[i] == 'P') 
-                    this-> pawn += 1;
             }
         }
     }
+    // return the (color?) and piece on a given square
+    char get_piece_on_square(int square) {
+
+    }
 };
+// Should be a look-up into my storage of all legal moves
+bool is_legal_bitmove(uint16_t bitmove) {
+
+}
 // fen string to charBoard (easy to print)
 char* fen_get_charBoard(char core64[]) {
     strtok(core64, "/");
@@ -168,18 +178,5 @@ int main() {
     chessboard.evaluation();
 
     Bitboard bitboardss = Bitboard(chessboard.charBoard);
-    binary(bitboardss.king);
-    cout << endl;
-    binary(bitboardss.knight);
-    cout << endl;
-    binary(bitboardss.bishop);
 
-
-    // Additional board representations.
-        // given player turn, iterate through every square
-        // for each player piece, generate legal moves
-            // 64 array of bitboards
-            // NULL for empty squares
-            // start with 64 square * 64 bits of allocated memory
-        // Two more bitboards: BlackPieces and WhitePieces        
 }

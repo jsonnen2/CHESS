@@ -10,6 +10,8 @@
 using namespace std;
 using namespace CHESS;
 
+char* fen_get_charBoard(char core64[]);
+
 class Board {
 
 public:
@@ -19,18 +21,18 @@ public:
     char* enPassant;
     char* fifty_move_draw_rule;
     char* fullmove_count;
-
-    Board(char* charBoard, char* player, char* castling_rights, 
-            char* enPassant, char* fifty_move_draw_rule, char* fullmove_count) {
-        this->charBoard = charBoard;
-        this->player = player;
-        this->castling_rights = castling_rights;
-        this->enPassant = enPassant;
-        this->fifty_move_draw_rule = fifty_move_draw_rule;
-        this->fullmove_count = fullmove_count;
+// THIS OBJECT INITIALIZATION EDITS YOUR STRING INPUT!!!
+    Board(char* core64) {
+        this-> player = strtok(NULL, " ");
+        this-> castling_rights = strtok(NULL, " ");
+        this-> enPassant = strtok(NULL, " ");
+        this-> fifty_move_draw_rule = strtok(NULL, " ");
+        this-> fullmove_count = strtok(NULL, " ");
+        this-> charBoard = fen_get_charBoard(core64);
     }
     void print_board() {
         for (int i = 0; i < 64; ++i) {
+            // newline every row
             if (i % 8 == 0 && i != 0) cout << endl;
             cout << charBoard[i] << ' ';
         }
@@ -45,7 +47,7 @@ public:
             {'b', -3}, {'B', 3},
             {'r', -5}, {'R', 5},
             {'q', -9}, {'Q', 9},
-            {'k', -20}, {'K', 20},
+            {'k', -200}, {'K', 200},
         };
         double point_sum = 0;
         for(int i=0; i<64; ++i) {
@@ -59,10 +61,50 @@ public:
 class Bitboard {
 // I will use fully public methods for now
 public: 
-    char* black_board;
-    char* white_board;
-    // 64 array of NULL or bitboards representing all legal moves for each piece.
-    char* chessboard;
+    uint64_t white_pieces;
+    uint64_t black_pieces;
+// Order of implementation
+    uint64_t rook;
+    uint64_t bishop;
+    uint64_t queen;
+    uint64_t king;
+    uint64_t knight;
+    uint64_t pawn;
+// another initialization method using fen string
+// I think I can only have 1 initialization tho
+    Bitboard(char* charBoard) {
+        // build white and black pieces
+        for(int i = 0; i < 64; ++i) {
+            this-> white_pieces <<= 1;
+            this-> black_pieces <<= 1;
+
+            this-> rook <<= 1;
+            this-> bishop <<= 1;
+            this-> queen <<= 1;
+            this-> king <<= 1;
+            this-> knight <<= 1;
+            this-> pawn <<= 1;
+            if (charBoard[i] != '.') {
+                if (isupper(charBoard[i])) 
+                    this-> white_pieces += 1;
+                else 
+                    this-> black_pieces += 1;
+
+                if (charBoard[i] == 'r' || charBoard[i] == 'R') 
+                    this-> rook += 1;
+                else if (charBoard[i] == 'b' || charBoard[i] == 'B') 
+                    this-> bishop += 1;
+                else if (charBoard[i] == 'q' || charBoard[i] == 'Q') 
+                    this-> queen += 1;
+                else if (charBoard[i] == 'k' || charBoard[i] == 'K') 
+                    this-> king += 1;
+                else if (charBoard[i] == 'n' || charBoard[i] == 'N') 
+                    this-> knight += 1;
+                else if (charBoard[i] == 'p' || charBoard[i] == 'P') 
+                    this-> pawn += 1;
+            }
+        }
+    }
 };
 // fen string to charBoard (easy to print)
 char* fen_get_charBoard(char core64[]) {
@@ -88,149 +130,50 @@ char* fen_get_charBoard(char core64[]) {
     }
     return board;
 }
-
-// The core64 is a pointer to the start of my fen string.
-// strtok(fen, " ")
-// was applied to fen before shoving it in this method. (and made a copy)
-// THIS METHOD EDITS YOUR STRING!!!
-Board create_board_obj(char* core64) {
-    char* player = strtok(NULL, " ");
-    char* castling_rights = strtok(NULL, " ");
-    char* enPassant = strtok(NULL, " ");
-    char* fifty_move_draw_rule = strtok(NULL, " ");
-    char* fullmove_count = strtok(NULL, " ");
-    char* charBoard = fen_get_charBoard(core64);
-    
-    Board board(charBoard, player, castling_rights, enPassant, fifty_move_draw_rule, fullmove_count);
-
-    /* PRINT STATEMENTS */
-    /*__________________*/
-    // board.print_board();
-    // cout << board.player << endl;
-    // cout << board.castling_rights << endl;
-    // cout << board.enPassant << endl;
-    // cout << board.fifty_move_draw_rule << endl;
-    // cout << board.fullmove_count << endl;
-
-    return board;
-}
 // Enter any int and return internal binary representation.
 // Boolean to print to console or not.
-int binary(char n, bool verbose) {
-    int result;
-    // I think I just want a diff alg
-    if (n < 0) {
-        std::queue<int> queue;
-        char running_total = (1 << 7);
-        queue.push(1);
-        for(int i = 6; i >= 0; --i) {
-            if(running_total + (1 << i) <= n) {
-                queue.push(1);
-                running_total += (1 << i);
-            }
-            else queue.push(0);
-        }
-        // Read our queue
-        result = 0;
-        while (queue.empty() == false) {
-            result *= 10;
-            result += queue.front();
-            queue.pop();
-        }
+void binary(uint64_t n) {
+    std::stack<int> stack;
+
+    while(n > 0) {
+        stack.push(n%2);
+        n = n/2;
     }
-    else {
-        std::stack<int> stack;
-        while(n > 0) {
-            stack.push(n%2);
-            n = n/2;
-        }
-        result = 0;
-        while (stack.empty() == false) {
-            result *= 10;
-            result += stack.top();
-            stack.pop();
-        }
-    }    
-    if (verbose) {
-        printf("%08d", result);
-        printf("\n");
+    while (stack.size() < 64) {
+        stack.push(0);
     }
-    return result;
-}
-// Takes in a pointer to a bitboard and zeros out all indices.
-void zero_bitboard(char* bitboard) {
-    for(int i = 0; i < sizeof(bitboard); ++i) {
-        bitboard[i] = 0b00000000;
+    int i = 63;
+    while (stack.empty() == false) {
+        if (i%8 == 7) cout << endl;
+        cout << stack.top();
+        stack.pop();
+        --i;
     }
-}
-// set bitboard to char c
-void set_bitboard(char* bitboard, char c) {
-    // TODO: make char c an optional param
-    for(int i = 0; i < sizeof(bitboard); ++i) {
-        bitboard[i] = c;
-    }
-}
-void print_bitboard(char* bitboard) {
-    for(int i = 0; i < sizeof(bitboard); ++i) {
-        binary(bitboard[i], true);
-    }
-}
-// Given current charBoard, update the bitboard given the pointer in memory
-void generate_colored_bitboard(char* charBoard, char* bitboard, bool isWhite) {
-    for(int i = 0; i < 8; ++i) {
-        char row = 0;
-        for(int j = 0; j<8; ++j) {
-            row = row << 1;
-            if (charBoard[8*i + j] != '.') {
-                if (!(isWhite xor isupper(charBoard[8*i + j]))) {
-                    row += 1;
-                }
-            }
-            binary(row, true);
-        }
-        cout << i << ": ";
-        printf("%08d", binary(row, false));
-        cout << endl;
-        bitboard[i] = row;
-    }
+    cout << endl;
 }
 
 int main() {
     // TODO: throw errors for illegal fen strings
-    // check that each 'row' contains 8 characters
+    // check that each "row" contains 8 characters
     const char fen[] = "rnbqkbnr/pppppppp/8/8/P7/8/1PPPPPPP/RNBQKBNR b KQkq - 0 1";
 
-    // Copy pointer
+// Copy fen string, then tokenize by " "
     char core64[100];
     strcpy(core64, fen);
     strtok(core64, " ");
 
-    Board chessboard = create_board_obj(core64);
+// board object using charBoard
+    Board chessboard = Board(core64);
     chessboard.print_board();
     chessboard.evaluation();
 
-    char* bitboard = new char[8];
-    set_bitboard(bitboard, 0b00000000);
-    print_bitboard(bitboard);
+    Bitboard bitboardss = Bitboard(chessboard.charBoard);
+    binary(bitboardss.king);
+    cout << endl;
+    binary(bitboardss.knight);
+    cout << endl;
+    binary(bitboardss.bishop);
 
-    generate_colored_bitboard(chessboard.charBoard, bitboard, true);
-    cout << "==================" << endl;
-    print_bitboard(bitboard);
-
-    cout << "==================" << endl;
-
-    char c = 0b11100100;
-    // c = c << 1;
-    cout << c << endl;
-    binary(c, true);
-    binary('d', true);
-
-    char d = 'd';
-    cout << (int) c << endl;
-
-    uint64_t foo = 0ULL;
-    foo = static_cast<uint64_t>(1) << 63;
-    cout << foo << endl;
 
     // Additional board representations.
         // given player turn, iterate through every square
